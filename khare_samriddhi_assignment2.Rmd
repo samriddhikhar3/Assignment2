@@ -75,3 +75,9 @@ B02018_002 indians
 B08537_013 number of people walking to work
 B08101_025 people taking public transit to work
 B24011_002 people working in business, science, and arts occupations
+B25026_001E people living in households
+B02001_002E white people
+B19013_001 median income
+B25058_001E rent
+B06012_002E under poverty line
+B01001_001 population

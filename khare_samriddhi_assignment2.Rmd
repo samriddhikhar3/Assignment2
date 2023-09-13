@@ -37,6 +37,9 @@ library(tidyr)
 library(ggplot2)
 library(viridis)
 
+
+
+
 options(scipen=999)
 options(tigris_class = "sf")
 

@@ -71,3 +71,7 @@ acs_variable_list.2016 <- load_variables(2016, #year
 ```
 
 B01001B_001 black
+B02018_002 indians
+B08537_013 number of people walking to work
+B08101_025 people taking public transit to work
+B24011_002 people working in business, science, and arts occupations

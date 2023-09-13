@@ -54,3 +54,20 @@ census_api_key('bf2d507651b5a621dbadd44533fb4f3deaab26bf', overwrite = TRUE)
 dir.create("output")
 
 ```
+
+https://github.com/samriddhikhar3/Assignment2/blob/main/data/MBTA_Systemwide_GTFS_Map.geojson
+
+this is the dataset to use
+
+```{r load_variables, cache=TRUE}
+
+acs_variable_list.2020 <- load_variables(2020, #year
+                                         "acs5", #five year ACS estimates
+                                         cache = TRUE)
+
+acs_variable_list.2016 <- load_variables(2016, #year
+                                         "acs5", #five year ACS estimates
+                                         cache = TRUE)
+```
+
+B01001B_001 black

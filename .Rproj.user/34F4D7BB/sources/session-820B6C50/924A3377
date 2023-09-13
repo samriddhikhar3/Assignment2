@@ -1,26 +1,26 @@
 {
-    "id": "4A1AB41B",
-    "path": "D:/Fall_2023/PPA/musa_5080_2023/Week_2/Lab2_Indicators_ACS.Rmd",
+    "id": "924A3377",
+    "path": "D:/Fall_2023/PPA/Week1/MarkdownClass1.Rmd",
     "project_path": null,
     "type": "r_markdown",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1694631004603.0,
+    "created": 1694633789684.0,
     "source_on_save": false,
     "relative_order": 4,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "88,36",
-        "scrollLine": "70"
+        "cursorPosition": "40,0",
+        "scrollLine": "33"
     },
     "folds": "",
-    "lastKnownWriteTime": 1694193448,
+    "lastKnownWriteTime": 1694050337,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1694193448,
+    "last_content_update": 1694050337,
     "read_only": false,
     "read_only_alternatives": []
 }

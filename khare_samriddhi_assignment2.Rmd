@@ -148,6 +148,9 @@ allTracts <- rbind(tracts16,tracts20)
 ```{r name, results = 'hide'}
 
 github_url <-"https://raw.githubusercontent.com/samriddhikhar3/Assignment2/main/data/MBTA_Systemwide_GTFS_Map.geojson"
+
+# try this: https://gis.massdot.state.ma.us/arcgis/rest/services/Multimodal/GTFS_Systemwide/MapServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json
+
 MBTAStops <- st_read(github_url) %>% 
   st_transform(st_crs(tracts16))  
 ```

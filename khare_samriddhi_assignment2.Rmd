@@ -8,13 +8,14 @@ output:
     toc_float: true
     code_folding: hide
     code_download: true
-    theme: yeti 
-    
+    theme: yeti
+  
+---
 ---
 
 ```{r setup, include=FALSE}
   knitr::opts_chunk$set(
-    echo = FALSE,
+    echo = TRUE,
     warning = FALSE,
     message = FALSE,
     out.width = '100%',
@@ -36,9 +37,7 @@ library(kableExtra)
 library(tidyr)
 library(ggplot2)
 library(viridis)
-
-
-
+library(prettydoc)
 
 options(scipen=999)
 options(tigris_class = "sf")
@@ -47,7 +46,7 @@ options(tigris_class = "sf")
 
 source("https://raw.githubusercontent.com/urbanSpatial/Public-Policy-Analytics-Landing/master/functions.r")
 
-palette5 <- c("#f0f9e8","#bae4bc","#7bccc4","#43a2ca","#0868ac")
+palette5 <- c("#fde725","#5ec962","#21918c","#3b528b","#440154")
 
 census_api_key('bf2d507651b5a621dbadd44533fb4f3deaab26bf', overwrite = TRUE)
 
@@ -82,7 +81,7 @@ B25097_001 mortgage
 
 Notice this returns "long" data - let's examine it
 
-```{r results='hide'}
+```{r data collection, include=TRUE, message=FALSE, warning=FALSE, results='hide'}
 tracts16 <-  
   get_acs(geography = "tract",
           variables = c("B25026_001E",#pop
@@ -146,7 +145,7 @@ tracts20 <-
 allTracts <- rbind(tracts16,tracts20)
 ```
 
-```{r}
+```{r name, results = 'hide'}
 
 github_url <-"https://raw.githubusercontent.com/samriddhikhar3/Assignment2/main/data/MBTA_Systemwide_GTFS_Map.geojson"
 MBTAStops <- st_read(github_url) %>% 
@@ -155,8 +154,12 @@ MBTAStops <- st_read(github_url) %>%
 
 ```{r}
 
+#clipping to tracts boundaries 
+
 clippedMBTA <- 
   st_intersection(MBTAStops, tracts16)
+
+#plotting
 
 ggplot() + 
   geom_sf(data=st_union(tracts16)) +
@@ -166,3 +169,221 @@ ggplot() +
        caption="Figure 1.1") +
   mapTheme()
 ```
+
+```{r}
+#creating a buffer
+MBTABuffers <- 
+  rbind(
+    st_buffer(clippedMBTA, 2640) %>%
+      mutate(Legend = "Buffer") %>%
+      dplyr::select(Legend),
+    st_union(st_buffer(clippedMBTA, 2640)) %>% #the number at the end is in feet, because our CRS is in feet
+      st_sf() %>%
+      mutate(Legend = "Unioned Buffer")) #all st functions will be spatial related stuff
+
+ggplot() +
+  geom_sf(data=MBTABuffers) +
+  geom_sf(data=clippedMBTA, show.legend = "point") +
+  facet_wrap(~Legend) + 
+  labs(caption = "Figure 1.2") +
+  mapTheme()
+
+#just the buffers
+
+buffer <- filter(MBTABuffers, Legend=="Unioned Buffer")
+
+```
+
+```{r}
+
+#selecting the TOD tracts 
+
+selectCentroids <-
+  st_centroid(tracts16)[buffer,] %>%
+  st_drop_geometry() %>%
+  left_join(., dplyr::select(tracts16, GEOID), by = "GEOID") %>%
+  st_sf() %>%
+  dplyr::select(TotalPop) %>%
+  mutate(Selection_Type = "Select by Centroids")
+
+ggplot() +
+  geom_sf(data=selectCentroids, aes(fill = TotalPop)) +
+  geom_sf(data=clippedMBTA, show.legend = "point") +
+  scale_fill_viridis_c() +
+  facet_wrap(~Selection_Type) + 
+  mapTheme()
+
+```
+
+```{r}
+
+#comparing TOD vs non TOD indicators 
+
+allTracts.group <- 
+  rbind(
+    st_centroid(allTracts)[buffer,] %>%
+      st_drop_geometry() %>%
+      left_join(allTracts) %>%
+      st_sf() %>%
+      mutate(TOD = "TOD"),
+    st_centroid(allTracts)[buffer, op = st_disjoint] %>%
+      st_drop_geometry() %>%
+      left_join(allTracts) %>%
+      st_sf() %>%
+      mutate(TOD = "Non-TOD")) %>%
+  mutate(MedRent.inf = ifelse(year == "2016", MedRent * 1.10, MedRent)) 
+
+
+
+```
+
+Can you re-create this figure using three geom_sf layers? The first is a basemap; the second maps rents using fill = q5(MedRent.inf), removing tract boundaries by setting colour=NA; and the third overlays buffer, setting colour = "red" and fill = NA.
+
+```{r}
+#plotting total pop
+
+ggplot()+
+  geom_sf(data = allTracts.group, aes(fill = q5(TotalPop)), color="transparent")+
+   scale_fill_manual(values = palette5,
+                    labels = qBr(allTracts.group, "TotalPop"),
+                    name = "Popluation\n(Quintile Breaks)") + mapTheme() +
+  facet_wrap(~year)+
+  geom_sf(data = allTracts.group %>%
+            filter(TOD == "TOD") %>%
+            st_union(),
+          color = "red",
+          fill = "transparent")+
+    
+  labs(
+    title = "Total Population, 2016-2020",
+    subtitle = "",
+    caption = "Figure Number, Data: US Census Bureau, ACS 5-year estimates",
+    fill = "Total Population")
+  
+```
+
+```{r}
+#plotting med inc
+ggplot()+
+  geom_sf(data = allTracts.group, aes(fill = q5(MedInc)), color="transparent")+
+  scale_fill_manual(values = palette5,
+                    labels = qBr(allTracts.group, "MedInc"),
+                    name = "Median Income\n(Quintile Breaks)") + mapTheme() +
+  facet_wrap(~year)+
+  geom_sf(data = allTracts.group %>%
+            filter(TOD == "TOD") %>%
+            st_union(),
+          color = "red",
+          fill = "transparent")+
+    
+  labs(
+    title = "Median Income in 2020 adjusted Dollars, 2016-2020",
+    subtitle = "",
+    caption = "Figure Number, Data: US Census Bureau, ACS 5-year estimates",
+    fill = "Median Income")
+  
+```
+
+```{r}
+#plotting med rent
+ggplot()+
+  geom_sf(data = allTracts.group, aes(fill = q5(MedRent)), color="transparent")+
+  scale_fill_manual(values = palette5,
+                    labels = qBr(allTracts.group, "MedRent"),
+                    name = "Median Rent\n(Quintile Breaks)") + mapTheme() +
+  facet_wrap(~year)+
+  geom_sf(data = allTracts.group %>%
+            filter(TOD == "TOD") %>%
+            st_union(),
+          color = "red",
+          fill = "transparent")+
+    
+  labs(
+    title = "Median Rent in 2020 adjusted Dollars, 2016-2020",
+    subtitle = "",
+    caption = "Figure Number, Data: US Census Bureau, ACS 5-year estimates",
+    fill = "Median Rent")
+  
+```
+```{r}
+#plotting pct income spent on rent
+ggplot()+
+  geom_sf(data = allTracts.group, aes(fill = q5(IncSpentOnRentPCt)), color="transparent")+
+  scale_fill_manual(values = palette5,
+                    labels = qBr(allTracts.group, "IncSpentOnRentPCt"),
+                    name = "PCT_of_Inc_On_Rent\n(Quintile Breaks)") + mapTheme() +
+  facet_wrap(~year)+
+  geom_sf(data = allTracts.group %>%
+            filter(TOD == "TOD") %>%
+            st_union(),
+          color = "red",
+          fill = "transparent")+
+    
+  labs(
+    title = "Percentage of Income Spent on Rent, 2016-2020",
+    subtitle = "",
+    caption = "Figure Number, Data: US Census Bureau, ACS 5-year estimates",
+    fill = "Median Rent")
+  
+```
+
+```{r}
+#plotting BusArtSciences
+
+ggplot()+
+  geom_sf(data = allTracts.group, aes(fill = q5(BusArtsScience)),color="transparent")+
+  scale_fill_manual(values = palette5,
+                    labels = qBr(allTracts.group, "TotalPop"),
+                    name = "Number of Residents\n(Quintile Breaks)") + mapTheme() +
+  facet_wrap(~year)+
+  geom_sf(data = allTracts.group %>%
+            filter(TOD == "TOD") %>%
+            st_union(),
+          color = "red",
+          fill = "transparent")+
+  labs(
+    title = "People Employed in the Business, Arts or Sciences Sector, 2016-2020",
+    subtitle = "",
+    caption = "Figure Number, Data: US Census Bureau, ACS 5-year estimates",
+    fill = "Population")
+  
+```
+
+```{r}
+
+# tables 
+
+allTracts.Summary <- 
+  st_drop_geometry(allTracts.group) %>% #best to go non spatil here because we're just making a table
+  group_by(year, TOD) %>%
+  summarize(Population = mean(TotalPop, na.rm = T),
+            Rent = mean(MedRent, na.rm = T),
+            Income = mean(MedInc, na.rm = T),
+            Bus_Art_Sciences = mean(BusArtsScience, na.rm = T),
+            Percent_Inc_on_Rent = mean(IncSpentOnRentPCt, na.rm = T))
+
+allTracts.Summary %>%
+  unite(year.TOD, year, TOD, sep = ": ", remove = T) %>%
+  gather(Variable, Value, -year.TOD) %>%
+  mutate(Value = round(Value, 2)) %>%
+  spread(year.TOD, Value) %>%
+  kable() %>%
+  kable_styling() %>%
+  footnote(general_title = "\n",
+           general = "Table 2.3")
+```
+
+```{r}
+#grouped bar graphs
+
+allTracts.Summary %>%
+  gather(Variable, Value, -year, -TOD) %>%
+  ggplot(aes(year, Value, fill = TOD)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    facet_wrap(~Variable, scales = "free", ncol=5) +
+    scale_fill_manual(values = c("#bae4bc", "#0868ac")) +
+    labs(title = "Indicator differences across time and space") +
+    theme(strip.text = element_text(size = 7))+
+    theme(legend.position="bottom")
+```
+

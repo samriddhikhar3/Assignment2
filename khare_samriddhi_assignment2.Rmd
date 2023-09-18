@@ -390,3 +390,44 @@ allTracts.Summary %>%
     theme(legend.position="bottom")
 ```
 
+
+```{r}
+
+class(allTracts.group)
+
+halfmiletracts <- allTracts.group %>% filter(TOD == "TOD")
+
+centroids <- st_centroid(halfmiletracts)
+
+
+
+centroid_coordinates <- st_coordinates(centroids)
+
+centroid_coordinates_df <- data.frame(
+  Longitude = centroid_coordinates[, 1],
+  Latitude = centroid_coordinates[, 2]
+)
+
+halfmiletracts_withCOORDS <- cbind(halfmiletracts, centroid_coordinates_df)
+
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = halfmiletracts_withCOORDS, fill = "transparent") +
+  geom_point(data = halfmiletracts_withCOORDS,
+             aes(x = Longitude, 
+                 y = Latitude, 
+                 size = TotalPop,
+                 fill = TotalPop), # Added fill aesthetic for color mapping
+             shape = 21, # Use a filled point shape
+             #col = "black", # Remove the outline color of points
+             alpha = 0.5) + # Adjust transparency
+  scale_size_continuous(range = c(0.5, 4)) +
+  scale_fill_gradientn(colors = hcl.colors(5, "viridis", rev = TRUE, alpha = 0.9)) +
+  labs(title = "Graduated Symbol Map",
+       size = "Variable Label") +
+  geom_sf(data = clippedMBTA, pch = 4, col = alpha("red", 0.7)) +
+  mapTheme()
+```
+
